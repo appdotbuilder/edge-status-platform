@@ -1,20 +1,49 @@
+import { db } from '../db';
+import { incidentUpdatesTable, incidentsTable } from '../db/schema';
 import { type CreateIncidentUpdateInput, type IncidentUpdate } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const createIncidentUpdate = async (input: CreateIncidentUpdateInput): Promise<IncidentUpdate> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating an update for an existing incident.
-    // TODO: Validate user has admin/editor permissions
-    // TODO: Validate incident exists and is not resolved
-    // TODO: Insert incident update into database
-    // TODO: Update the main incident status if different
-    // TODO: Send notifications to subscribers about the update
-    return Promise.resolve({
-        id: 1,
+  try {
+    // Verify the incident exists and get its current status
+    const existingIncident = await db.select()
+      .from(incidentsTable)
+      .where(eq(incidentsTable.id, input.incident_id))
+      .execute();
+
+    if (existingIncident.length === 0) {
+      throw new Error(`Incident with ID ${input.incident_id} not found`);
+    }
+
+    // Insert the incident update
+    const result = await db.insert(incidentUpdatesTable)
+      .values({
         incident_id: input.incident_id,
         title: input.title,
         body: input.body,
-        status: input.status,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as IncidentUpdate);
+        status: input.status
+      })
+      .returning()
+      .execute();
+
+    const incidentUpdate = result[0];
+
+    // Update the main incident status if it's different from the current status
+    const currentIncident = existingIncident[0];
+    if (currentIncident.status !== input.status) {
+      await db.update(incidentsTable)
+        .set({ 
+          status: input.status,
+          resolved_at: input.status === 'resolved' ? new Date() : null,
+          updated_at: new Date()
+        })
+        .where(eq(incidentsTable.id, input.incident_id))
+        .execute();
+    }
+
+    return incidentUpdate;
+  } catch (error) {
+    console.error('Incident update creation failed:', error);
+    throw error;
+  }
 };

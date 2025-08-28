@@ -1,22 +1,45 @@
+import { db } from '../db';
+import { componentsTable, metricsTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { type UpdateComponentStatusInput, type Component } from '../schema';
 
 export const updateComponentStatus = async (input: UpdateComponentStatusInput): Promise<Component> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating a component's status and creating a metric entry.
-    // TODO: Validate user has admin/editor permissions
-    // TODO: Update component status in database
-    // TODO: Create metric entry for status change
-    // TODO: If status indicates an issue, consider auto-creating an incident
-    return Promise.resolve({
-        id: input.component_id,
-        status_page_id: 1,
-        component_group_id: null,
-        name: 'Placeholder Component',
-        description: null,
+  try {
+    // First, verify the component exists and get current data
+    const existingComponents = await db.select()
+      .from(componentsTable)
+      .where(eq(componentsTable.id, input.component_id))
+      .execute();
+
+    if (existingComponents.length === 0) {
+      throw new Error(`Component with id ${input.component_id} not found`);
+    }
+
+    // Update the component status and updated_at timestamp
+    const updatedComponents = await db.update(componentsTable)
+      .set({
         status: input.status,
-        sort_order: 0,
-        is_visible: true,
-        created_at: new Date(),
         updated_at: new Date()
-    } as Component);
+      })
+      .where(eq(componentsTable.id, input.component_id))
+      .returning()
+      .execute();
+
+    const updatedComponent = updatedComponents[0];
+
+    // Create a metric entry for this status change
+    await db.insert(metricsTable)
+      .values({
+        component_id: input.component_id,
+        timestamp: new Date(),
+        status: input.status,
+        response_time: null // Could be extended to include response time data
+      })
+      .execute();
+
+    return updatedComponent;
+  } catch (error) {
+    console.error('Component status update failed:', error);
+    throw error;
+  }
 };

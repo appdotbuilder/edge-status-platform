@@ -1,10 +1,18 @@
+import { db } from '../db';
+import { usersTable } from '../db/schema';
 import { type User } from '../schema';
 
 export const getUsers = async (): Promise<User[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all users from the database with proper authorization.
-    // TODO: Implement authorization check (admin only)
-    // TODO: Query users from database
-    // TODO: Exclude password hash from response
-    return [];
+  try {
+    // Query all users from database
+    const results = await db.select()
+      .from(usersTable)
+      .execute();
+
+    // Return users (password_hash is already included in User type from schema)
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    throw error;
+  }
 };

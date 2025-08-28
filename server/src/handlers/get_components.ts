@@ -1,10 +1,20 @@
+import { db } from '../db';
+import { componentsTable } from '../db/schema';
+import { eq, asc } from 'drizzle-orm';
 import { type Component } from '../schema';
 
 export const getComponents = async (statusPageId: number): Promise<Component[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all components for a status page.
-    // TODO: Validate user has access to the status page (public or member)
-    // TODO: Query components from database ordered by sort_order
-    // TODO: Include component groups if needed
-    return [];
+  try {
+    // Query components from database ordered by sort_order, then by name
+    const results = await db.select()
+      .from(componentsTable)
+      .where(eq(componentsTable.status_page_id, statusPageId))
+      .orderBy(asc(componentsTable.sort_order), asc(componentsTable.name))
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Get components failed:', error);
+    throw error;
+  }
 };

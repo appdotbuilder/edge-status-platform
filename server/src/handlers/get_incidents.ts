@@ -1,10 +1,20 @@
+import { db } from '../db';
+import { incidentsTable } from '../db/schema';
 import { type Incident } from '../schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const getIncidents = async (statusPageId: number): Promise<Incident[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching incidents for a status page.
-    // TODO: Validate user has access to the status page
-    // TODO: Query incidents from database ordered by created_at desc
-    // TODO: Include incident updates and affected components
-    return [];
+  try {
+    // Query incidents from database ordered by created_at desc
+    const results = await db.select()
+      .from(incidentsTable)
+      .where(eq(incidentsTable.status_page_id, statusPageId))
+      .orderBy(desc(incidentsTable.created_at))
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Get incidents failed:', error);
+    throw error;
+  }
 };

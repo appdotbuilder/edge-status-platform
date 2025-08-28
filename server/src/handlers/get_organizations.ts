@@ -1,9 +1,18 @@
+import { db } from '../db';
+import { organizationsTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { type Organization } from '../schema';
 
 export const getOrganizations = async (): Promise<Organization[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching organizations that the current user has access to.
-    // TODO: Implement user authentication check
-    // TODO: Query organizations based on user membership
-    return [];
+  try {
+    const results = await db.select()
+      .from(organizationsTable)
+      .where(eq(organizationsTable.is_active, true))
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch organizations:', error);
+    throw error;
+  }
 };

@@ -1,18 +1,22 @@
+import { db } from '../db';
+import { organizationsTable } from '../db/schema';
 import { type CreateOrganizationInput, type Organization } from '../schema';
 
 export const createOrganization = async (input: CreateOrganizationInput): Promise<Organization> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new organization and persisting it in the database.
-    // TODO: Validate slug uniqueness
-    // TODO: Insert organization into database
-    // TODO: Create default admin membership for current user
-    return Promise.resolve({
-        id: 1,
+  try {
+    // Insert organization record
+    const result = await db.insert(organizationsTable)
+      .values({
         name: input.name,
         slug: input.slug,
-        subscription_tier: input.subscription_tier,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Organization);
+        subscription_tier: input.subscription_tier
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Organization creation failed:', error);
+    throw error;
+  }
 };

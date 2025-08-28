@@ -1,10 +1,21 @@
+import { db } from '../db';
+import { statusPagesTable } from '../db/schema';
 import { type StatusPage } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const getStatusPages = async (organizationId?: number): Promise<StatusPage[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching status pages for an organization or all accessible ones.
-    // TODO: Implement user authentication and authorization
-    // TODO: Filter by organization if specified
-    // TODO: Query status pages from database with proper relations
-    return [];
+  try {
+    // Build query conditionally based on organization filter
+    const results = organizationId !== undefined
+      ? await db.select().from(statusPagesTable)
+          .where(eq(statusPagesTable.organization_id, organizationId))
+          .execute()
+      : await db.select().from(statusPagesTable).execute();
+    
+    // No numeric conversions needed for status pages - all fields are already correct types
+    return results;
+  } catch (error) {
+    console.error('Failed to get status pages:', error);
+    throw error;
+  }
 };
